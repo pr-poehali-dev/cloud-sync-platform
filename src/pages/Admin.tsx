@@ -78,7 +78,7 @@ export default function Admin() {
     const cases = Array.isArray(d.cases) ? (d.cases as CaseItem[]) : []
 
     return (
-      <div className="min-h-screen bg-[#0a0a0c] text-white p-6 max-w-3xl mx-auto">
+      <div className="min-h-screen bg-[#0a0a0c] text-white"><div className="max-w-3xl mx-auto p-6">
         <button onClick={() => setSelected(null)} className="mb-6 flex items-center gap-2 text-sm text-neutral-400 hover:text-white transition-colors">
           <Icon name="ArrowLeft" size={16} /> Назад к списку
         </button>
@@ -140,12 +140,13 @@ export default function Admin() {
             </div>
           </div>
         )}
-      </div>
+      </div></div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0c] text-white p-6 max-w-4xl mx-auto">
+    <div className="min-h-screen bg-[#0a0a0c] text-white">
+      <div className="max-w-4xl mx-auto p-6">
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Icon name="Settings" size={22} className="text-[#FF5A00]" />
@@ -187,6 +188,7 @@ export default function Admin() {
             </div>
           </button>
         ))}
+      </div>
       </div>
     </div>
   )
