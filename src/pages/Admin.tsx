@@ -169,18 +169,20 @@ export default function Admin() {
           {[
             ['Telegram', selected.telegram],
             ['Email', selected.email],
-            ['Сайт', Array.isArray(d.site) ? (d.site as string[]).join(', ') : d.site],
+            ['Сайт', Array.isArray(d.site) ? (d.site as string[]).filter(Boolean).join(', ') : d.site],
             ['Категории', Array.isArray(d.categories) ? (d.categories as string[]).join(', ') : ''],
             ['Ниши', Array.isArray(d.niches) ? (d.niches as string[]).join(', ') : ''],
             ['Инструменты', d.tools],
-            ['Описание', d.pitch],
-            ['Проектов', d.projectsCount],
-            ['Стоимость', Array.isArray(d.pricingType) ? (d.pricingType as string[]).join(', ') : ''],
+            ['Описание для каталога', d.pitch],
+            ['Проектов реализовано', d.projectsCount],
+            ['Тип оплаты', Array.isArray(d.pricingType) ? (d.pricingType as string[]).join(', ') : ''],
             ['Цена от', d.priceFrom],
-            ['Формат', Array.isArray(d.workFormat) ? (d.workFormat as string[]).join(', ') : ''],
+            ['Формат работы', Array.isArray(d.workFormat) ? (d.workFormat as string[]).join(', ') : ''],
             ['Сроки', d.terms],
-            ['Портфолио', d.portfolio],
+            ['Ссылка на портфолио', d.portfolio],
             ['Отзывы', d.reviews],
+            ['Дата заполнения', d.date],
+            ['Согласие', d.agree === true || d.agree === 'true' ? 'Да, подтверждено' : ''],
           ].map(([label, val]) => val ? (
             <div key={label as string} className="mb-3">
               <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-1">{label}</div>
