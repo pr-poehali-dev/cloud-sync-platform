@@ -180,6 +180,7 @@ def handle_ai_fill(body: dict) -> dict:
 - Не домысливай и не угадывай — лучше пустая строка
 - categories и niches — строго из разрешённых значений
 - Для name: используй имя человека или название компании (не домен сайта)
+- Для telegram: заполняй ТОЛЬКО если в тексте есть явная ссылка t.me/username или написано @username. Путь сайта (например /LB в URL) — НЕ является Telegram-ником
 
 Текст:
 {pages_text}
@@ -189,7 +190,7 @@ JSON для заполнения:
   "name": "",
   "city": "",
   "site": [],
-  "telegram": "только @username без ссылки, например @ivanov",
+  "telegram": "только если явно указан t.me/username или @username в тексте, НЕ брать из URL сайта",
   "email": "",
   "type": "",
   "categories": [],
