@@ -54,32 +54,36 @@ def handle_upload(body: dict) -> dict:
 # ── /ai-fill ─────────────────────────────────────────────────────────────────
 
 def fetch_url(url: str) -> str:
-    # Jina AI Reader — рендерит JS/SPA и отдаёт чистый текст
-    jina_url = f'https://r.jina.ai/{url}'
-    try:
-        req = urllib.request.Request(
-            jina_url,
-            headers={'User-Agent': 'Mozilla/5.0', 'Accept': 'text/plain', 'X-Return-Format': 'text'},
-        )
-        with urllib.request.urlopen(req, timeout=25) as resp:
-            text = resp.read().decode('utf-8', errors='ignore')
-        text = re.sub(r'\s+', ' ', text).strip()
-        print(f'[fetch_url] jina {url} -> {len(text)} chars')
-        return f'--- {url} ---\n{text[:6000]}'
-    except Exception as e:
-        print(f'[fetch_url] jina ERROR {url}: {e}')
-        # Fallback: прямой запрос (для обычных сайтов)
+    from urllib.parse import urlencode
+    sb_key = os.environ.get('SCRAPINGBEE_API_KEY', '')
+
+    # ScrapingBee — headless Chrome, читает React/SPA
+    if sb_key:
         try:
-            req2 = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req2, timeout=10) as resp:
+            params = urlencode({'api_key': sb_key, 'url': url, 'render_js': 'true'})
+            req = urllib.request.Request(f'https://app.scrapingbee.com/api/v1/?{params}')
+            with urllib.request.urlopen(req, timeout=30) as resp:
                 html = resp.read().decode('utf-8', errors='ignore')
             html = re.sub(r'<(script|style)[^>]*>.*?</(script|style)>', '', html, flags=re.DOTALL | re.IGNORECASE)
-            text2 = re.sub(r'<[^>]+>', ' ', html)
-            text2 = re.sub(r'\s+', ' ', text2).strip()
-            print(f'[fetch_url] direct {url} -> {len(text2)} chars')
-            return f'--- {url} ---\n{text2[:6000]}'
-        except Exception as e2:
-            return f'[Ошибка загрузки {url}: {e2}]'
+            text = re.sub(r'<[^>]+>', ' ', html)
+            text = re.sub(r'\s+', ' ', text).strip()
+            print(f'[fetch_url] scrapingbee {url} -> {len(text)} chars')
+            return f'--- {url} ---\n{text[:6000]}'
+        except Exception as e:
+            print(f'[fetch_url] scrapingbee ERROR {url}: {e}')
+
+    # Fallback: прямой запрос (для обычных серверных сайтов)
+    try:
+        req2 = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req2, timeout=10) as resp:
+            html = resp.read().decode('utf-8', errors='ignore')
+        html = re.sub(r'<(script|style)[^>]*>.*?</(script|style)>', '', html, flags=re.DOTALL | re.IGNORECASE)
+        text2 = re.sub(r'<[^>]+>', ' ', html)
+        text2 = re.sub(r'\s+', ' ', text2).strip()
+        print(f'[fetch_url] direct {url} -> {len(text2)} chars')
+        return f'--- {url} ---\n{text2[:6000]}'
+    except Exception as e2:
+        return f'[Ошибка загрузки {url}: {e2}]'
 
 
 def gpt_request(prompt: str, api_key: str) -> str:
