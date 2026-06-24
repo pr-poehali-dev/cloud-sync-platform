@@ -1,4 +1,4 @@
-export type FieldType = 'text' | 'multi-text' | 'textarea' | 'checkbox' | 'radio' | 'cases' | 'photos'
+export type FieldType = 'text' | 'multi-text' | 'textarea' | 'checkbox' | 'radio' | 'cases' | 'photos' | 'date'
 
 export interface FormField {
   id: string
@@ -9,6 +9,7 @@ export interface FormField {
   options?: string[]
   required?: boolean
   allowCustom?: boolean
+  noCustom?: boolean
 }
 
 export interface FormSection {
@@ -178,8 +179,8 @@ export const formSections: FormSection[] = [
     intro:
       'Заполняя анкету, вы соглашаетесь на публикацию информации в каталоге «Лидер ИИ» / «Лидер Франшиз» и подтверждаете, что все данные достоверны.',
     fields: [
-      { id: 'agree', label: 'Согласен(а) с условиями размещения', type: 'checkbox', options: ['Согласен(а) с условиями размещения'], required: true },
-      { id: 'date', label: 'Дата', type: 'text', placeholder: 'ДД.ММ.ГГГГ' },
+      { id: 'agree', label: 'Согласен(а) с условиями размещения', type: 'checkbox', options: ['Согласен(а) с условиями размещения'], required: true, noCustom: true },
+      { id: 'date', label: 'Дата', type: 'date' },
     ],
   },
 ]

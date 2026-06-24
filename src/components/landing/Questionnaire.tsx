@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Squares } from './squares-background'
 import EditableOption from './EditableOption'
 import PhotoUpload from './PhotoUpload'
+import DatePicker from './DatePicker'
 import { generatePdf, FormData } from './generatePdf'
 import { brand, formSections, FormField, CaseItem, emptyCase } from './formConfig'
 
@@ -164,14 +165,23 @@ export default function Questionnaire() {
                 onRemove={() => removeOption(field, opt)}
               />
             ))}
-            <button
-              type="button"
-              onClick={() => addOption(field)}
-              className="flex items-center justify-center gap-2 rounded-lg border border-dashed border-white/20 px-3 py-2 text-sm text-neutral-400 transition-colors hover:border-[#FF5A00] hover:text-[#FF5A00]"
-            >
-              <Icon name="Plus" size={16} /> Добавить вариант
-            </button>
+            {!field.noCustom && (
+              <button
+                type="button"
+                onClick={() => addOption(field)}
+                className="flex items-center justify-center gap-2 rounded-lg border border-dashed border-white/20 px-3 py-2 text-sm text-neutral-400 transition-colors hover:border-[#FF5A00] hover:text-[#FF5A00]"
+              >
+                <Icon name="Plus" size={16} /> Добавить вариант
+              </button>
+            )}
           </div>
+        )
+      case 'date':
+        return (
+          <DatePicker
+            value={(data[field.id] as string) || ''}
+            onChange={(val) => setValue(field.id, val)}
+          />
         )
       case 'cases':
         return (
@@ -320,9 +330,10 @@ export default function Questionnaire() {
         <div className="mt-16 rounded-2xl border border-white/10 bg-white/[0.03] p-8 text-center">
           <h3 className="text-lg font-semibold text-white">Готовы отправить анкету?</h3>
           <p className="mx-auto mt-2 max-w-xl text-sm text-neutral-400">
-            Скачайте заполненную анкету в PDF и отправьте её в Telegram {brand.footerTelegram} или на почту{' '}
-            {brand.footerEmail}.
+            Скачайте PDF и отправьте в Telegram или на почту — мы создадим вашу карточку в каталоге.
           </p>
+
+          {/* Primary: download */}
           <Button
             onClick={() => generatePdf(data)}
             size="lg"
@@ -330,6 +341,29 @@ export default function Questionnaire() {
           >
             <Icon name="Download" size={20} /> Скачать PDF
           </Button>
+
+          {/* Send buttons */}
+          <div className="mt-4 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+            <a
+              href={`https://t.me/${brand.footerTelegram.replace('@', '')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 rounded-xl border border-white/15 bg-white/[0.04] px-5 py-3 text-sm font-medium text-white transition-colors hover:border-[#FF5A00] hover:text-[#FF5A00]"
+            >
+              <Icon name="Send" size={18} />
+              Написать в Telegram
+              <span className="ml-1 text-neutral-500">{brand.footerTelegram}</span>
+            </a>
+            <a
+              href={`mailto:${brand.footerEmail}?subject=${encodeURIComponent('Анкета ИИ-специалиста — каталог Лидер ИИ')}&body=${encodeURIComponent('Добрый день!\n\nОтправляю заполненную анкету специалиста для размещения в каталоге «Лидер ИИ» / «Лидер Франшиз».\n\nАнкета в приложении к письму (PDF).\n\nС уважением,')}`}
+              className="flex items-center gap-2 rounded-xl border border-white/15 bg-white/[0.04] px-5 py-3 text-sm font-medium text-white transition-colors hover:border-[#FF5A00] hover:text-[#FF5A00]"
+            >
+              <Icon name="Mail" size={18} />
+              Отправить на почту
+              <span className="ml-1 text-neutral-500">{brand.footerEmail}</span>
+            </a>
+          </div>
+
           <p className="mt-6 text-xs text-neutral-600">{brand.footerNote}</p>
         </div>
       </div>
