@@ -294,5 +294,8 @@ export function generatePdf(data: FormData) {
   if (!win) return
   win.document.write(html)
   win.document.close()
-  win.onload = () => setTimeout(() => { win.print() }, 800)
+  win.onload = () => setTimeout(() => {
+    win.print()
+    win.addEventListener('afterprint', () => win.close())
+  }, 800)
 }
