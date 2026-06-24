@@ -170,7 +170,7 @@ JSON для заполнения:
   "name": "",
   "city": "",
   "site": [],
-  "telegram": "",
+  "telegram": "только @username без ссылки, например @ivanov",
   "email": "",
   "type": "",
   "categories": [],
