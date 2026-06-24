@@ -54,49 +54,32 @@ def handle_upload(body: dict) -> dict:
 # ── /ai-fill ─────────────────────────────────────────────────────────────────
 
 def fetch_url(url: str) -> str:
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'ru-RU,ru;q=0.9,en;q=0.8',
-    }
-    results = []
-
-    # Пробуем переданный URL и корневой домен
-    from urllib.parse import urlparse
-    parsed = urlparse(url)
-    root_url = f"{parsed.scheme}://{parsed.netloc}/"
-    urls_to_try = list(dict.fromkeys([url, root_url]))  # уникальные, url первым
-
-    for u in urls_to_try:
+    # Jina AI Reader — рендерит JS/SPA и отдаёт чистый текст
+    jina_url = f'https://r.jina.ai/{url}'
+    try:
+        req = urllib.request.Request(
+            jina_url,
+            headers={'User-Agent': 'Mozilla/5.0', 'Accept': 'text/plain', 'X-Return-Format': 'text'},
+        )
+        with urllib.request.urlopen(req, timeout=25) as resp:
+            text = resp.read().decode('utf-8', errors='ignore')
+        text = re.sub(r'\s+', ' ', text).strip()
+        print(f'[fetch_url] jina {url} -> {len(text)} chars')
+        return f'--- {url} ---\n{text[:6000]}'
+    except Exception as e:
+        print(f'[fetch_url] jina ERROR {url}: {e}')
+        # Fallback: прямой запрос (для обычных сайтов)
         try:
-            req = urllib.request.Request(u, headers=headers)
-            with urllib.request.urlopen(req, timeout=15) as resp:
+            req2 = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req2, timeout=10) as resp:
                 html = resp.read().decode('utf-8', errors='ignore')
-
-            # Вытаскиваем meta description и title
-            title = re.search(r'<title[^>]*>(.*?)</title>', html, re.IGNORECASE | re.DOTALL)
-            desc = re.search(r'<meta[^>]+name=["\']description["\'][^>]+content=["\']([^"\']+)', html, re.IGNORECASE)
-            og_desc = re.search(r'<meta[^>]+property=["\']og:description["\'][^>]+content=["\']([^"\']+)', html, re.IGNORECASE)
-
-            # Убираем скрипты/стили и берём текст
-            html_clean = re.sub(r'<(script|style|noscript)[^>]*>.*?</(script|style|noscript)>', '', html, flags=re.DOTALL | re.IGNORECASE)
-            text = re.sub(r'<[^>]+>', ' ', html_clean)
-            text = re.sub(r'\s+', ' ', text).strip()
-
-            parts = []
-            if title: parts.append(f"Заголовок: {title.group(1).strip()}")
-            if desc: parts.append(f"Описание: {desc.group(1).strip()}")
-            if og_desc: parts.append(f"OG описание: {og_desc.group(1).strip()}")
-            parts.append(text[:4000])
-
-            chunk = f'--- {u} ---\n' + '\n'.join(parts)
-            results.append(chunk)
-            print(f'[fetch_url] {u} -> {len(text)} chars')
-        except Exception as e:
-            results.append(f'[Ошибка загрузки {u}: {e}]')
-            print(f'[fetch_url] ERROR {u}: {e}')
-
-    return '\n\n'.join(results)
+            html = re.sub(r'<(script|style)[^>]*>.*?</(script|style)>', '', html, flags=re.DOTALL | re.IGNORECASE)
+            text2 = re.sub(r'<[^>]+>', ' ', html)
+            text2 = re.sub(r'\s+', ' ', text2).strip()
+            print(f'[fetch_url] direct {url} -> {len(text2)} chars')
+            return f'--- {url} ---\n{text2[:6000]}'
+        except Exception as e2:
+            return f'[Ошибка загрузки {url}: {e2}]'
 
 
 def gpt_request(prompt: str, api_key: str) -> str:
