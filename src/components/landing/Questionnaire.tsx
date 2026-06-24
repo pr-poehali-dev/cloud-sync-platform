@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import Icon from '@/components/ui/icon'
 import { Button } from '@/components/ui/button'
@@ -29,23 +29,41 @@ export default function Questionnaire() {
   }, [])
 
   const [data, setData] = useState<FormData>(initialData)
-  const [submitted, setSubmitted] = useState(false)
+  const savedIdRef = useRef<number | null>(null)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const isFirstRender = useRef(true)
 
   const BACKEND_URL = 'https://functions.poehali.dev/753eeee8-5067-4bee-942d-4f1ef52b12b8'
 
-  const handleDownloadPdf = async () => {
-    generatePdf(data)
-    if (!submitted) {
+  // Автосохранение — через 2 сек после последнего изменения
+  useEffect(() => {
+    if (isFirstRender.current) { isFirstRender.current = false; return }
+
+    // Проверяем что хоть одно поле заполнено
+    const hasAnyValue = Object.values(data).some(v =>
+      typeof v === 'string' ? v.trim().length > 0
+      : Array.isArray(v) ? v.some(i => typeof i === 'string' ? i.trim() : Object.values(i as object).some(x => String(x).trim()))
+      : false
+    )
+    if (!hasAnyValue) return
+
+    if (timerRef.current) clearTimeout(timerRef.current)
+    timerRef.current = setTimeout(async () => {
       try {
-        await fetch(BACKEND_URL, {
+        const res = await fetch(BACKEND_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'submit', data }),
+          body: JSON.stringify({ action: 'submit', data, id: savedIdRef.current }),
         })
-        setSubmitted(true)
-      } catch (e) { console.error('submit error', e) }
-    }
-  }
+        const json = await res.json()
+        if (json.id) savedIdRef.current = json.id
+      } catch (e) { console.error('autosave error', e) }
+    }, 2000)
+
+    return () => { if (timerRef.current) clearTimeout(timerRef.current) }
+  }, [data])
+
+  const handleDownloadPdf = () => { generatePdf(data) }
 
   const [options, setOptions] = useState<Record<string, string[]>>(() => {
     const o: Record<string, string[]> = {}

@@ -238,19 +238,30 @@ JSON для заполнения:
 # ── /submit ───────────────────────────────────────────────────────────────────
 
 def handle_submit(body: dict) -> dict:
-    """Сохраняет заполненную анкету в БД."""
+    """Сохраняет или обновляет анкету в БД (автосохранение)."""
     data = body.get('data', {})
+    existing_id = body.get('id')
     if not data:
         return err('data is required')
+    fields = (data.get('name',''), data.get('city',''), data.get('telegram',''), data.get('email',''), data.get('type',''), json.dumps(data, ensure_ascii=False))
     conn = psycopg2.connect(os.environ['DATABASE_URL'])
     cur = conn.cursor()
-    cur.execute(
-        f'INSERT INTO {SCHEMA}.submissions (name, city, telegram, email, type, data) VALUES (%s,%s,%s,%s,%s,%s) RETURNING id',
-        (data.get('name',''), data.get('city',''), data.get('telegram',''), data.get('email',''), data.get('type',''), json.dumps(data, ensure_ascii=False))
-    )
-    row = cur.fetchone()
+    if existing_id:
+        cur.execute(
+            f'UPDATE {SCHEMA}.submissions SET name=%s, city=%s, telegram=%s, email=%s, type=%s, data=%s WHERE id=%s RETURNING id',
+            (*fields, existing_id)
+        )
+        row = cur.fetchone()
+        record_id = row[0] if row else existing_id
+    else:
+        cur.execute(
+            f'INSERT INTO {SCHEMA}.submissions (name, city, telegram, email, type, data) VALUES (%s,%s,%s,%s,%s,%s) RETURNING id',
+            fields
+        )
+        row = cur.fetchone()
+        record_id = row[0]
     conn.commit(); cur.close(); conn.close()
-    return ok({'id': row[0], 'ok': True})
+    return ok({'id': record_id, 'ok': True})
 
 
 def handle_admin(event: dict) -> dict:
