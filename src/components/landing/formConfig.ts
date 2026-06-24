@@ -1,4 +1,4 @@
-export type FieldType = 'text' | 'multi-text' | 'textarea' | 'checkbox' | 'radio' | 'cases'
+export type FieldType = 'text' | 'multi-text' | 'textarea' | 'checkbox' | 'radio' | 'cases' | 'photos'
 
 export interface FormField {
   id: string
@@ -117,6 +117,12 @@ export const formSections: FormSection[] = [
         label: 'Кейсы',
         type: 'cases',
         hint: 'Кейс 1 — обязательно. Остальные — по желанию, поднимают карточку в рейтинге.',
+      },
+      {
+        id: 'portfolioPhotos',
+        label: 'Фото из портфолио',
+        type: 'photos',
+        hint: 'Скриншоты результатов, интерфейсов, кейсов — что угодно. Необязательно, но поднимает карточку в рейтинге.',
       },
     ],
   },

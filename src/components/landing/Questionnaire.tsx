@@ -4,6 +4,7 @@ import Icon from '@/components/ui/icon'
 import { Button } from '@/components/ui/button'
 import { Squares } from './squares-background'
 import EditableOption from './EditableOption'
+import PhotoUpload from './PhotoUpload'
 import { generatePdf, FormData } from './generatePdf'
 import { brand, formSections, FormField, CaseItem, emptyCase } from './formConfig'
 
@@ -18,6 +19,7 @@ export default function Questionnaire() {
         if (f.type === 'checkbox') d[f.id] = []
         else if (f.type === 'multi-text') d[f.id] = ['']
         else if (f.type === 'cases') d[f.id] = [emptyCase()]
+        else if (f.type === 'photos') d[f.id] = []
         else d[f.id] = ''
       })
     )
@@ -219,6 +221,13 @@ export default function Questionnaire() {
               <Icon name="Plus" size={16} /> Добавить кейс
             </button>
           </div>
+        )
+      case 'photos':
+        return (
+          <PhotoUpload
+            urls={data[field.id] as string[]}
+            onChange={(urls) => setValue(field.id, urls)}
+          />
         )
     }
   }
