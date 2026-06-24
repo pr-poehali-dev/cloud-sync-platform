@@ -60,7 +60,7 @@ def fetch_url(url: str) -> str:
     # ScrapingBee — headless Chrome, читает React/SPA
     if sb_key:
         try:
-            params = urlencode({'api_key': sb_key, 'url': url, 'render_js': 'true'})
+            params = urlencode({'api_key': sb_key, 'url': url, 'render_js': 'true', 'wait': '3000', 'block_ads': 'true'})
             req = urllib.request.Request(f'https://app.scrapingbee.com/api/v1/?{params}')
             with urllib.request.urlopen(req, timeout=30) as resp:
                 html = resp.read().decode('utf-8', errors='ignore')
