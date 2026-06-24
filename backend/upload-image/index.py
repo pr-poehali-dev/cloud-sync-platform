@@ -68,13 +68,13 @@ def fetch_url(url: str) -> str:
 
 def gpt_request(prompt: str, api_key: str) -> str:
     payload = json.dumps({
-        'model': 'gpt-4o-mini',
+        'model': 'mistral-small-latest',
         'messages': [{'role': 'user', 'content': prompt}],
         'temperature': 0.2,
         'max_tokens': 1500,
     }).encode()
     req = urllib.request.Request(
-        'https://api.openai.com/v1/chat/completions',
+        'https://api.mistral.ai/v1/chat/completions',
         data=payload,
         headers={'Content-Type': 'application/json', 'Authorization': f'Bearer {api_key}'},
         method='POST',
@@ -123,9 +123,9 @@ def handle_ai_fill(body: dict) -> dict:
     if not urls and not files:
         return err('urls or files required')
 
-    api_key = os.environ.get('OPENAI_API_KEY', '')
+    api_key = os.environ.get('MISTRAL_API_KEY', '')
     if not api_key:
-        return err('OPENAI_API_KEY not set', 500)
+        return err('MISTRAL_API_KEY not set', 500)
 
     pages_text = ''
     for url in urls[:5]:
