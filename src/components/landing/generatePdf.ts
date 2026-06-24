@@ -146,7 +146,8 @@ export function generatePdf(data: FormData) {
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Inter', Arial, sans-serif; font-size: 11pt; background: #0a0a0c; color: #e8e8e8; }
+    html { background: #0a0a0c; }
+    body { font-family: 'Inter', Arial, sans-serif; font-size: 11pt; background: #0a0a0c; color: #e8e8e8; min-height: 100vh; }
 
     .header {
       background: #0f0f12;
@@ -196,7 +197,7 @@ export function generatePdf(data: FormData) {
     .textarea-box { min-height: 60px; }
     .placeholder { color: #444; }
 
-    .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+    .options-grid { display: flex; flex-direction: column; gap: 5px; }
     .option-item {
       display: flex; align-items: center; gap: 8px;
       background: rgba(255,255,255,0.03);
@@ -249,8 +250,9 @@ export function generatePdf(data: FormData) {
       font-size: 8pt; color: #444; line-height: 1.6;
     }
 
+    @page { size: A4; margin: 0; }
     @media print {
-      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      html, body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: #0a0a0c !important; }
       .section { page-break-inside: avoid; }
     }
   </style>
