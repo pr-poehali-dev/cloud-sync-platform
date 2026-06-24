@@ -5,12 +5,13 @@ interface EditableOptionProps {
   value: string
   checked: boolean
   isRadio?: boolean
+  readonly?: boolean
   onToggle: () => void
   onRename: (next: string) => void
   onRemove: () => void
 }
 
-export default function EditableOption({ value, checked, isRadio, onToggle, onRename, onRemove }: EditableOptionProps) {
+export default function EditableOption({ value, checked, isRadio, readonly, onToggle, onRename, onRemove }: EditableOptionProps) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(value)
 
@@ -56,22 +57,26 @@ export default function EditableOption({ value, checked, isRadio, onToggle, onRe
         </span>
       )}
 
-      <button
-        type="button"
-        onClick={() => setEditing(true)}
-        className="text-neutral-500 opacity-0 transition-opacity hover:text-white group-hover:opacity-100"
-        title="Переименовать"
-      >
-        <Icon name="Pencil" size={14} />
-      </button>
-      <button
-        type="button"
-        onClick={onRemove}
-        className="text-neutral-500 opacity-0 transition-opacity hover:text-red-400 group-hover:opacity-100"
-        title="Удалить"
-      >
-        <Icon name="X" size={14} />
-      </button>
+      {!readonly && (
+        <>
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="text-neutral-500 opacity-0 transition-opacity hover:text-white group-hover:opacity-100"
+            title="Переименовать"
+          >
+            <Icon name="Pencil" size={14} />
+          </button>
+          <button
+            type="button"
+            onClick={onRemove}
+            className="text-neutral-500 opacity-0 transition-opacity hover:text-red-400 group-hover:opacity-100"
+            title="Удалить"
+          >
+            <Icon name="X" size={14} />
+          </button>
+        </>
+      )}
     </div>
   )
 }

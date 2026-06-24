@@ -160,6 +160,7 @@ export default function Questionnaire() {
                     ? data[field.id] === opt
                     : (data[field.id] as string[])?.includes(opt)
                 }
+                readonly={field.noCustom}
                 onToggle={() => toggleOption(field, opt)}
                 onRename={(next) => renameOption(field, opt, next)}
                 onRemove={() => removeOption(field, opt)}
