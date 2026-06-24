@@ -84,11 +84,44 @@ def gpt_request(prompt: str, api_key: str) -> str:
     return data['choices'][0]['message']['content']
 
 
+def extract_pdf_text(b64: str) -> str:
+    """Извлекает текст из PDF через pypdf (без C-зависимостей)."""
+    try:
+        import io
+        from pypdf import PdfReader
+        data = base64.b64decode(b64)
+        reader = PdfReader(io.BytesIO(data))
+        text = ' '.join(page.extract_text() or '' for page in reader.pages)
+        return re.sub(r'\s+', ' ', text).strip()[:6000]
+    except Exception as e:
+        return f'[Ошибка чтения PDF: {e}]'
+
+
+def extract_file_text(file: dict) -> str:
+    """Извлекает текст из загруженного файла по типу."""
+    mime = file.get('type', '')
+    b64 = file.get('b64', '')
+    name = file.get('name', 'файл')
+
+    if 'pdf' in mime:
+        return f'--- {name} (PDF) ---\n{extract_pdf_text(b64)}'
+
+    # TXT и DOC как текст
+    try:
+        raw = base64.b64decode(b64).decode('utf-8', errors='ignore')
+        text = re.sub(r'\s+', ' ', raw).strip()[:6000]
+        return f'--- {name} ---\n{text}'
+    except Exception as e:
+        return f'[Ошибка чтения {name}: {e}]'
+
+
 def handle_ai_fill(body: dict) -> dict:
-    """Принимает список URL, парсит и заполняет анкету ИИ-специалиста через GPT."""
+    """Принимает список URL и/или файлы, парсит и заполняет анкету ИИ-специалиста через GPT."""
     urls: list = body.get('urls', [])
-    if not urls:
-        return err('urls required')
+    files: list = body.get('files', [])
+
+    if not urls and not files:
+        return err('urls or files required')
 
     api_key = os.environ.get('OPENAI_API_KEY', '')
     if not api_key:
@@ -97,6 +130,9 @@ def handle_ai_fill(body: dict) -> dict:
     pages_text = ''
     for url in urls[:5]:
         pages_text += f'\n\n--- {url} ---\n{fetch_url(url)}'
+
+    for file in files[:3]:
+        pages_text += f'\n\n{extract_file_text(file)}'
 
     prompt = f"""Ты помогаешь заполнить анкету ИИ-специалиста для каталога.
 Вот содержимое сайтов/профилей специалиста:
