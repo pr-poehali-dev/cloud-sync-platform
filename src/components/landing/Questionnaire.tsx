@@ -275,7 +275,7 @@ export default function Questionnaire() {
         </motion.div>
 
         {/* Section nav */}
-        <div className="mt-10 flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+        <div className="mt-10 flex flex-wrap gap-2">
           {formSections.map((s, i) => (
             <button
               key={s.id}
