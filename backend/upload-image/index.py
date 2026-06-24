@@ -272,13 +272,45 @@ def handle_admin(event: dict) -> dict:
         return err('Unauthorized', 401)
     conn = psycopg2.connect(os.environ['DATABASE_URL'])
     cur = conn.cursor()
-    cur.execute(f'SELECT id, created_at, name, city, telegram, email, type, data FROM {SCHEMA}.submissions ORDER BY created_at DESC')
+    cur.execute(f'SELECT id, created_at, name, city, telegram, email, type, data, status FROM {SCHEMA}.submissions ORDER BY created_at DESC')
     rows = cur.fetchall()
     cur.close(); conn.close()
     return ok({'submissions': [
-        {'id': r[0], 'created_at': str(r[1]), 'name': r[2], 'city': r[3], 'telegram': r[4], 'email': r[5], 'type': r[6], 'data': r[7]}
+        {'id': r[0], 'created_at': str(r[1]), 'name': r[2], 'city': r[3], 'telegram': r[4], 'email': r[5], 'type': r[6], 'data': r[7], 'status': r[8]}
         for r in rows
     ]})
+
+
+def handle_delete(body: dict, event: dict) -> dict:
+    """Удаляет анкету по id (только с токеном)."""
+    token = (event.get('headers') or {}).get('X-Admin-Token', '')
+    if token != ADMIN_TOKEN:
+        return err('Unauthorized', 401)
+    record_id = body.get('id')
+    if not record_id:
+        return err('id is required')
+    conn = psycopg2.connect(os.environ['DATABASE_URL'])
+    cur = conn.cursor()
+    cur.execute(f'DELETE FROM {SCHEMA}.submissions WHERE id = %s', (record_id,))
+    conn.commit(); cur.close(); conn.close()
+    return ok({'ok': True})
+
+
+def handle_set_status(body: dict, event: dict) -> dict:
+    """Меняет статус анкеты (только с токеном)."""
+    token = (event.get('headers') or {}).get('X-Admin-Token', '')
+    if token != ADMIN_TOKEN:
+        return err('Unauthorized', 401)
+    record_id = body.get('id')
+    status = body.get('status')
+    allowed = ('new', 'added', 'rejected')
+    if not record_id or status not in allowed:
+        return err('id and valid status required')
+    conn = psycopg2.connect(os.environ['DATABASE_URL'])
+    cur = conn.cursor()
+    cur.execute(f'UPDATE {SCHEMA}.submissions SET status = %s WHERE id = %s', (status, record_id))
+    conn.commit(); cur.close(); conn.close()
+    return ok({'ok': True})
 
 
 # ── Router ────────────────────────────────────────────────────────────────────
@@ -300,4 +332,8 @@ def handler(event: dict, context) -> dict:
         return handle_ai_fill(body)
     if action == 'submit':
         return handle_submit(body)
+    if action == 'delete':
+        return handle_delete(body, event)
+    if action == 'set_status':
+        return handle_set_status(body, event)
     return handle_upload(body)
