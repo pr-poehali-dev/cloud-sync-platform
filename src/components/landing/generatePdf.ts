@@ -1,4 +1,3 @@
-import { jsPDF } from 'jspdf'
 import { formSections, brand, FormSection, CaseItem } from './formConfig'
 
 export type FormData = Record<string, string | string[] | CaseItem[]>
@@ -6,95 +5,107 @@ export type FormData = Record<string, string | string[] | CaseItem[]>
 const isCheckedArray = (v: unknown): v is string[] => Array.isArray(v) && typeof v[0] !== 'object'
 
 export function generatePdf(data: FormData) {
-  const doc = new jsPDF({ unit: 'mm', format: 'a4' })
-  const pageW = doc.internal.pageSize.getWidth()
-  const pageH = doc.internal.pageSize.getHeight()
-  const margin = 18
-  const maxW = pageW - margin * 2
-  let y = margin
-
-  const ensure = (h: number) => {
-    if (y + h > pageH - margin) {
-      doc.addPage()
-      y = margin
-    }
-  }
-
-  const line = (text: string, opts: { size?: number; bold?: boolean; color?: number[]; gap?: number } = {}) => {
-    const { size = 11, bold = false, color = [30, 30, 30], gap = 1.5 } = opts
-    doc.setFont('helvetica', bold ? 'bold' : 'normal')
-    doc.setFontSize(size)
-    doc.setTextColor(color[0], color[1], color[2])
-    const lines = doc.splitTextToSize(text, maxW)
-    lines.forEach((l: string) => {
-      ensure(size * 0.5)
-      doc.text(l, margin, y)
-      y += size * 0.42 + gap
-    })
-  }
-
-  // Header
-  doc.setFillColor(15, 15, 18)
-  doc.rect(0, 0, pageW, 26, 'F')
-  doc.setTextColor(255, 122, 0)
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(16)
-  doc.text('Leader Franchise · Leader AI', margin, 13)
-  doc.setTextColor(200, 200, 200)
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(10)
-  doc.text('AI Specialist Catalog Application', margin, 20)
-  y = 36
-
-  line(brand.heroTitle, { size: 15, bold: true, color: [15, 15, 18], gap: 3 })
-  y += 4
-
-  formSections.forEach((section: FormSection) => {
-    ensure(16)
-    doc.setDrawColor(255, 122, 0)
-    doc.setLineWidth(0.6)
-    doc.line(margin, y, margin + maxW, y)
-    y += 5
-    line(`${section.number}. ${section.title}`, { size: 13, bold: true, color: [255, 90, 0], gap: 2 })
-
-    section.fields.forEach((field) => {
+  const sections = formSections.map((section: FormSection) => {
+    const fieldsHtml = section.fields.map((field) => {
       const value = data[field.id]
 
       if (field.type === 'cases') {
         const cases = (value as CaseItem[]) || []
-        cases.forEach((c, i) => {
-          if (!c.client && !c.task && !c.done && !c.result && !c.contact) return
-          line(`Кейс ${i + 1}`, { size: 11, bold: true, gap: 1 })
-          if (c.client) line(`Клиент / ниша: ${c.client}`, { size: 10, color: [60, 60, 60] })
-          if (c.task) line(`Задача: ${c.task}`, { size: 10, color: [60, 60, 60] })
-          if (c.done) line(`Что сделали: ${c.done}`, { size: 10, color: [60, 60, 60] })
-          if (c.result) line(`Результат в цифрах: ${c.result}`, { size: 10, color: [60, 60, 60] })
-          if (c.contact) line(`Контакт для подтверждения: ${c.contact}`, { size: 10, color: [60, 60, 60] })
-          y += 2
-        })
-        return
+        const filtered = cases.filter((c) => c.client || c.task || c.done || c.result)
+        if (!filtered.length) return ''
+        return filtered.map((c, i) => `
+          <div class="case">
+            <div class="case-title">Кейс ${i + 1}</div>
+            ${c.client ? `<div class="field-row"><span class="field-label">Клиент / ниша:</span> ${c.client}</div>` : ''}
+            ${c.task ? `<div class="field-row"><span class="field-label">Задача:</span> ${c.task}</div>` : ''}
+            ${c.done ? `<div class="field-row"><span class="field-label">Что сделали:</span> ${c.done}</div>` : ''}
+            ${c.result ? `<div class="field-row"><span class="field-label">Результат:</span> ${c.result}</div>` : ''}
+            ${c.contact ? `<div class="field-row"><span class="field-label">Контакт:</span> ${c.contact}</div>` : ''}
+          </div>
+        `).join('')
       }
 
       let display = ''
       if (isCheckedArray(value)) display = value.filter(Boolean).join(', ')
-      else if (Array.isArray(value)) display = (value as string[]).filter(Boolean).join('\n')
+      else if (Array.isArray(value)) display = (value as string[]).filter(Boolean).join(', ')
       else if (typeof value === 'string') display = value
 
-      if (!display) return
-      line(field.label, { size: 11, bold: true, gap: 1 })
-      line(display, { size: 10, color: [60, 60, 60] })
-      y += 1.5
-    })
-    y += 3
-  })
+      if (!display) return ''
+      return `
+        <div class="field">
+          <div class="field-label">${field.label}</div>
+          <div class="field-value">${display.replace(/\n/g, '<br/>')}</div>
+        </div>
+      `
+    }).join('')
 
-  ensure(20)
-  y += 4
-  doc.setDrawColor(220, 220, 220)
-  doc.line(margin, y, margin + maxW, y)
-  y += 6
-  line(`Telegram: ${brand.footerTelegram}   ·   Email: ${brand.footerEmail}`, { size: 9, color: [120, 120, 120] })
-  line(brand.footerNote, { size: 9, color: [120, 120, 120] })
+    if (!fieldsHtml.trim()) return ''
+    return `
+      <div class="section">
+        <div class="section-header">
+          <span class="section-num">${section.number}</span>
+          ${section.title}
+        </div>
+        ${fieldsHtml}
+      </div>
+    `
+  }).join('')
 
-  doc.save('anketa-ai-specialist.pdf')
+  const html = `<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Анкета ИИ-специалиста</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', Arial, sans-serif; font-size: 11pt; color: #1a1a1a; background: #fff; }
+    .header { background: #0f0f12; color: #fff; padding: 14px 24px 12px; }
+    .header-title { color: #FF7A00; font-size: 15pt; font-weight: 700; }
+    .header-sub { color: #aaa; font-size: 9pt; margin-top: 2px; }
+    .hero { padding: 14px 24px 4px; border-bottom: 1px solid #eee; }
+    .hero h1 { font-size: 14pt; font-weight: 700; color: #111; }
+    .content { padding: 0 24px 24px; }
+    .section { margin-top: 18px; page-break-inside: avoid; }
+    .section-header { font-size: 12pt; font-weight: 700; color: #FF5A00; border-bottom: 2px solid #FF5A00; padding-bottom: 4px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+    .section-num { background: #FF5A00; color: #fff; border-radius: 50%; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-size: 10pt; font-weight: 700; flex-shrink: 0; }
+    .field { margin-bottom: 8px; }
+    .field-label { font-size: 9pt; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px; }
+    .field-value { font-size: 10.5pt; color: #1a1a1a; line-height: 1.5; }
+    .case { background: #fafafa; border: 1px solid #eee; border-radius: 6px; padding: 10px 12px; margin-bottom: 8px; }
+    .case-title { font-weight: 700; font-size: 10pt; color: #FF5A00; margin-bottom: 6px; }
+    .field-row { font-size: 10pt; color: #333; margin-bottom: 3px; line-height: 1.4; }
+    .footer { margin-top: 24px; border-top: 1px solid #ddd; padding-top: 10px; color: #888; font-size: 8.5pt; }
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .section { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-title">Leader Franchise · Leader AI</div>
+    <div class="header-sub">AI Specialist Catalog Application</div>
+  </div>
+  <div class="hero"><h1>${brand.heroTitle}</h1></div>
+  <div class="content">
+    ${sections}
+    <div class="footer">
+      Telegram: ${brand.footerTelegram} &nbsp;·&nbsp; Email: ${brand.footerEmail}<br/>
+      ${brand.footerNote}
+    </div>
+  </div>
+</body>
+</html>`
+
+  const win = window.open('', '_blank')
+  if (!win) return
+  win.document.write(html)
+  win.document.close()
+  win.onload = () => {
+    setTimeout(() => {
+      win.print()
+      win.close()
+    }, 500)
+  }
 }
