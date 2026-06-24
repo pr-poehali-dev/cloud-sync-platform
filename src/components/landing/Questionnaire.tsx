@@ -6,6 +6,7 @@ import { Squares } from './squares-background'
 import EditableOption from './EditableOption'
 import PhotoUpload from './PhotoUpload'
 import DatePicker from './DatePicker'
+import AiFillModal from './AiFillModal'
 import { generatePdf, FormData } from './generatePdf'
 import { brand, formSections, FormField, CaseItem, emptyCase } from './formConfig'
 
@@ -83,6 +84,46 @@ export default function Questionnaire() {
   const scrollTo = (idx: number) => {
     document.getElementById(`form-section-${idx}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     setActiveSection(idx)
+  }
+
+  const applyAiData = (ai: Record<string, unknown>) => {
+    setData((prev) => {
+      const next = { ...prev }
+      const str = (v: unknown) => (typeof v === 'string' ? v : '')
+      const arr = (v: unknown) => (Array.isArray(v) ? (v as string[]) : [])
+
+      if (ai.name) next.name = str(ai.name)
+      if (ai.city) next.city = str(ai.city)
+      if (ai.telegram) next.telegram = str(ai.telegram)
+      if (ai.email) next.email = str(ai.email)
+      if (ai.site) next.site = arr(ai.site).length ? arr(ai.site) : [str(ai.site)]
+      if (ai.tools) next.tools = str(ai.tools)
+      if (ai.pitch) next.pitch = str(ai.pitch)
+      if (ai.projectsCount) next.projectsCount = str(ai.projectsCount)
+      if (ai.priceFrom) next.priceFrom = str(ai.priceFrom)
+      if (arr(ai.type).length) next.type = str(ai.type)
+      else if (ai.type) next.type = str(ai.type)
+      if (arr(ai.categories).length) next.categories = arr(ai.categories)
+      if (arr(ai.niches).length) next.niches = arr(ai.niches)
+      if (arr(ai.pricingType).length) next.pricingType = arr(ai.pricingType)
+      if (arr(ai.workFormat).length) next.workFormat = arr(ai.workFormat)
+      return next
+    })
+    // Добавляем новые опции в чекбоксы если их нет
+    setOptions((prev) => {
+      const next = { ...prev }
+      const merge = (fieldId: string, vals: string[]) => {
+        const existing = next[fieldId] || []
+        const toAdd = vals.filter((v) => !existing.includes(v))
+        if (toAdd.length) next[fieldId] = [...existing, ...toAdd]
+      }
+      if (Array.isArray(ai.categories)) merge('categories', ai.categories as string[])
+      if (Array.isArray(ai.niches)) merge('niches', ai.niches as string[])
+      if (Array.isArray(ai.pricingType)) merge('pricingType', ai.pricingType as string[])
+      if (Array.isArray(ai.workFormat)) merge('workFormat', ai.workFormat as string[])
+      return next
+    })
+    scrollTo(0)
   }
 
   const updateMultiText = (fieldId: string, idx: number, val: string) => {
@@ -270,7 +311,12 @@ export default function Questionnaire() {
         {/* Hero */}
         <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
           <span className="text-xs font-semibold uppercase tracking-[0.3em] text-[#FF5A00]">{brand.eyebrow}</span>
-          <h1 className="mt-3 text-3xl font-bold leading-tight tracking-tight md:text-5xl">{brand.heroTitle}</h1>
+          <div className="mt-3 flex flex-wrap items-start gap-4">
+            <h1 className="flex-1 text-3xl font-bold leading-tight tracking-tight md:text-5xl">{brand.heroTitle}</h1>
+            <div className="pt-1">
+              <AiFillModal onFill={applyAiData} />
+            </div>
+          </div>
           <p className="mt-4 max-w-2xl text-neutral-400">{brand.heroSubtitle}</p>
         </motion.div>
 
