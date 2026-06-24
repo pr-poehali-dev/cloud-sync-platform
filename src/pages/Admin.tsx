@@ -43,6 +43,7 @@ export default function Admin() {
   const [loading, setLoading] = useState(false)
   const [selected, setSelected] = useState<Submission | null>(null)
   const [error, setError] = useState('')
+  const [openDropdown, setOpenDropdown] = useState<number | null>(null)
 
   const login = () => {
     if (token === ADMIN_TOKEN) { setAuthed(true); load(token) }
@@ -259,21 +260,26 @@ export default function Admin() {
                   </button>
 
                   {/* Статус — кликабельный дропдаун */}
-                  <div className="relative group flex-shrink-0">
-                    <button className={`text-xs font-semibold border rounded-full px-3 py-1 transition-all cursor-pointer ${STATUS_COLORS[st]}`}>
+                  <div className="relative flex-shrink-0">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setOpenDropdown(openDropdown === s.id ? null : s.id) }}
+                      className={`text-xs font-semibold border rounded-full px-3 py-1 transition-all cursor-pointer ${STATUS_COLORS[st]}`}
+                    >
                       {STATUS_LABELS[st]}
                     </button>
-                    <div className="absolute right-0 top-full mt-1 z-10 hidden group-hover:flex flex-col gap-1 bg-[#1a1a1f] border border-white/10 rounded-xl p-1.5 shadow-xl min-w-[140px]">
+                    {openDropdown === s.id && (
+                    <div className="absolute right-0 top-full mt-1 z-20 flex flex-col gap-1 bg-[#1a1a1f] border border-white/10 rounded-xl p-1.5 shadow-xl min-w-[140px]">
                       {(['new', 'added', 'rejected'] as Status[]).map(opt => (
                         <button
                           key={opt}
-                          onClick={(e) => setStatus(s.id, opt, e)}
+                          onClick={(e) => { setStatus(s.id, opt, e); setOpenDropdown(null) }}
                           className={`text-xs text-left px-3 py-1.5 rounded-lg transition-colors ${st === opt ? 'text-white bg-white/10' : 'text-neutral-400 hover:text-white hover:bg-white/5'}`}
                         >
                           {STATUS_LABELS[opt]}
                         </button>
                       ))}
                     </div>
+                    )}
                   </div>
 
                   {/* Telegram + дата */}
