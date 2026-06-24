@@ -66,10 +66,10 @@ export default function AiFillModal({ onFill }: AiFillModalProps) {
 
     try {
       const list = urls.split('\n').map((s) => s.trim()).filter(Boolean)
-      const res = await fetch(`${AI_URL}/ai-fill`, {
+      const res = await fetch(AI_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ urls: list, files }),
+        body: JSON.stringify({ action: 'ai-fill', urls: list, files }),
       })
       const data = await res.json()
       clearInterval(ticker)
@@ -244,9 +244,13 @@ export default function AiFillModal({ onFill }: AiFillModalProps) {
                   </div>
                   <p className="font-semibold text-white">Что-то пошло не так</p>
                   <p className="text-center text-sm text-neutral-500">{errorMsg}</p>
-                  <Button onClick={() => setStage('input')} variant="outline" className="border-white/20 text-white hover:bg-white/10">
+                  <button
+                    type="button"
+                    onClick={() => setStage('input')}
+                    className="rounded-xl border border-white/20 bg-transparent px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white/10"
+                  >
                     Попробовать снова
-                  </Button>
+                  </button>
                 </div>
               )}
             </motion.div>

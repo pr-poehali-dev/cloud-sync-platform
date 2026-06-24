@@ -173,13 +173,13 @@ def handle_ai_fill(body: dict) -> dict:
 # ── Router ────────────────────────────────────────────────────────────────────
 
 def handler(event: dict, context) -> dict:
-    """Единая функция: POST /upload — загрузка фото, POST /ai-fill — автозаполнение анкеты."""
+    """Единая функция: action=upload — загрузка фото, action=ai-fill — автозаполнение анкеты."""
     if event.get('httpMethod') == 'OPTIONS':
         return {'statusCode': 200, 'headers': CORS, 'body': ''}
 
-    path = event.get('path', '/')
     body = json.loads(event.get('body') or '{}')
+    action = body.get('action', 'upload')
 
-    if path.endswith('/ai-fill'):
+    if action == 'ai-fill':
         return handle_ai_fill(body)
     return handle_upload(body)
