@@ -27,6 +27,7 @@ interface AttachedFile {
 export default function AiFillModal({ onFill }: AiFillModalProps) {
   const [open, setOpen] = useState(false)
   const [urls, setUrls] = useState('')
+  const [rawText, setRawText] = useState('')
   const [files, setFiles] = useState<AttachedFile[]>([])
   const [stage, setStage] = useState<Stage>('input')
   const [step, setStep] = useState(0)
@@ -36,7 +37,7 @@ export default function AiFillModal({ onFill }: AiFillModalProps) {
 
   const close = () => {
     setOpen(false)
-    setTimeout(() => { setStage('input'); setUrls(''); setFiles([]); setStep(0) }, 300)
+    setTimeout(() => { setStage('input'); setUrls(''); setRawText(''); setFiles([]); setStep(0) }, 300)
   }
 
   const readFile = (file: File): Promise<AttachedFile> =>
@@ -56,7 +57,7 @@ export default function AiFillModal({ onFill }: AiFillModalProps) {
 
   const removeFile = (name: string) => setFiles((prev) => prev.filter((f) => f.name !== name))
 
-  const canRun = urls.trim() || files.length > 0
+  const canRun = urls.trim() || rawText.trim() || files.length > 0
 
   const run = async () => {
     if (!canRun) return
@@ -69,7 +70,7 @@ export default function AiFillModal({ onFill }: AiFillModalProps) {
       const res = await fetch(AI_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'ai-fill', urls: list, files }),
+        body: JSON.stringify({ action: 'ai-fill', urls: list, files, rawText: rawText.trim() }),
       })
       const data = await res.json()
       clearInterval(ticker)
