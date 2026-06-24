@@ -54,16 +54,49 @@ def handle_upload(body: dict) -> dict:
 # ── /ai-fill ─────────────────────────────────────────────────────────────────
 
 def fetch_url(url: str) -> str:
-    try:
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            html = resp.read().decode('utf-8', errors='ignore')
-        html = re.sub(r'<(script|style)[^>]*>.*?</(script|style)>', '', html, flags=re.DOTALL | re.IGNORECASE)
-        text = re.sub(r'<[^>]+>', ' ', html)
-        text = re.sub(r'\s+', ' ', text).strip()
-        return text[:5000]
-    except Exception as e:
-        return f'[Ошибка загрузки {url}: {e}]'
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'ru-RU,ru;q=0.9,en;q=0.8',
+    }
+    results = []
+
+    # Пробуем переданный URL и корневой домен
+    from urllib.parse import urlparse
+    parsed = urlparse(url)
+    root_url = f"{parsed.scheme}://{parsed.netloc}/"
+    urls_to_try = list(dict.fromkeys([url, root_url]))  # уникальные, url первым
+
+    for u in urls_to_try:
+        try:
+            req = urllib.request.Request(u, headers=headers)
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                html = resp.read().decode('utf-8', errors='ignore')
+
+            # Вытаскиваем meta description и title
+            title = re.search(r'<title[^>]*>(.*?)</title>', html, re.IGNORECASE | re.DOTALL)
+            desc = re.search(r'<meta[^>]+name=["\']description["\'][^>]+content=["\']([^"\']+)', html, re.IGNORECASE)
+            og_desc = re.search(r'<meta[^>]+property=["\']og:description["\'][^>]+content=["\']([^"\']+)', html, re.IGNORECASE)
+
+            # Убираем скрипты/стили и берём текст
+            html_clean = re.sub(r'<(script|style|noscript)[^>]*>.*?</(script|style|noscript)>', '', html, flags=re.DOTALL | re.IGNORECASE)
+            text = re.sub(r'<[^>]+>', ' ', html_clean)
+            text = re.sub(r'\s+', ' ', text).strip()
+
+            parts = []
+            if title: parts.append(f"Заголовок: {title.group(1).strip()}")
+            if desc: parts.append(f"Описание: {desc.group(1).strip()}")
+            if og_desc: parts.append(f"OG описание: {og_desc.group(1).strip()}")
+            parts.append(text[:4000])
+
+            chunk = f'--- {u} ---\n' + '\n'.join(parts)
+            results.append(chunk)
+            print(f'[fetch_url] {u} -> {len(text)} chars')
+        except Exception as e:
+            results.append(f'[Ошибка загрузки {u}: {e}]')
+            print(f'[fetch_url] ERROR {u}: {e}')
+
+    return '\n\n'.join(results)
 
 
 def gpt_request(prompt: str, api_key: str) -> str:
@@ -128,8 +161,8 @@ def handle_ai_fill(body: dict) -> dict:
         return err('MISTRAL_API_KEY not set', 500)
 
     pages_text = ''
-    for url in urls[:5]:
-        pages_text += f'\n\n--- {url} ---\n{fetch_url(url)}'
+    for url in urls[:3]:
+        pages_text += f'\n\n{fetch_url(url)}'
 
     for file in files[:3]:
         pages_text += f'\n\n{extract_file_text(file)}'
