@@ -1,0 +1,288 @@
+import { useMemo, useState } from 'react'
+import { motion } from 'framer-motion'
+import Icon from '@/components/ui/icon'
+import { Button } from '@/components/ui/button'
+import { Squares } from './squares-background'
+import EditableOption from './EditableOption'
+import { generatePdf, FormData } from './generatePdf'
+import { brand, formSections, FormField, CaseItem, emptyCase } from './formConfig'
+
+const inputCls =
+  'w-full rounded-lg border border-white/15 bg-white/[0.03] px-4 py-3 text-sm text-white placeholder:text-neutral-600 outline-none transition-colors focus:border-[#FF5A00]'
+
+export default function Questionnaire() {
+  const initialData = useMemo<FormData>(() => {
+    const d: FormData = {}
+    formSections.forEach((s) =>
+      s.fields.forEach((f) => {
+        if (f.type === 'checkbox') d[f.id] = []
+        else if (f.type === 'cases') d[f.id] = [emptyCase()]
+        else d[f.id] = ''
+      })
+    )
+    return d
+  }, [])
+
+  const [data, setData] = useState<FormData>(initialData)
+  const [options, setOptions] = useState<Record<string, string[]>>(() => {
+    const o: Record<string, string[]> = {}
+    formSections.forEach((s) => s.fields.forEach((f) => f.options && (o[f.id] = [...f.options])))
+    return o
+  })
+  const [activeSection, setActiveSection] = useState(0)
+
+  const setValue = (id: string, value: FormData[string]) => setData((p) => ({ ...p, [id]: value }))
+
+  const toggleOption = (field: FormField, opt: string) => {
+    if (field.type === 'radio') {
+      setValue(field.id, (data[field.id] as string) === opt ? '' : opt)
+    } else {
+      const arr = (data[field.id] as string[]) || []
+      setValue(field.id, arr.includes(opt) ? arr.filter((x) => x !== opt) : [...arr, opt])
+    }
+  }
+
+  const renameOption = (field: FormField, oldVal: string, next: string) => {
+    setOptions((p) => ({ ...p, [field.id]: p[field.id].map((o) => (o === oldVal ? next : o)) }))
+    if (field.type === 'radio') {
+      if (data[field.id] === oldVal) setValue(field.id, next)
+    } else {
+      const arr = data[field.id] as string[]
+      if (arr.includes(oldVal)) setValue(field.id, arr.map((x) => (x === oldVal ? next : x)))
+    }
+  }
+
+  const removeOption = (field: FormField, opt: string) => {
+    setOptions((p) => ({ ...p, [field.id]: p[field.id].filter((o) => o !== opt) }))
+    if (field.type === 'radio') {
+      if (data[field.id] === opt) setValue(field.id, '')
+    } else {
+      setValue(field.id, (data[field.id] as string[]).filter((x) => x !== opt))
+    }
+  }
+
+  const addOption = (field: FormField) => {
+    const name = `Свой вариант ${(options[field.id]?.length || 0) + 1}`
+    setOptions((p) => ({ ...p, [field.id]: [...(p[field.id] || []), name] }))
+  }
+
+  // Cases helpers
+  const updateCase = (fieldId: string, idx: number, key: keyof CaseItem, val: string) => {
+    const cases = [...(data[fieldId] as CaseItem[])]
+    cases[idx] = { ...cases[idx], [key]: val }
+    setValue(fieldId, cases)
+  }
+  const addCase = (fieldId: string) => setValue(fieldId, [...(data[fieldId] as CaseItem[]), emptyCase()])
+  const removeCase = (fieldId: string, idx: number) =>
+    setValue(fieldId, (data[fieldId] as CaseItem[]).filter((_, i) => i !== idx))
+
+  const scrollTo = (idx: number) => {
+    document.getElementById(`form-section-${idx}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    setActiveSection(idx)
+  }
+
+  const renderField = (field: FormField) => {
+    switch (field.type) {
+      case 'text':
+        return (
+          <input
+            className={inputCls}
+            placeholder={field.placeholder || ''}
+            value={(data[field.id] as string) || ''}
+            onChange={(e) => setValue(field.id, e.target.value)}
+          />
+        )
+      case 'textarea':
+        return (
+          <textarea
+            rows={4}
+            className={inputCls + ' resize-none'}
+            placeholder={field.placeholder || ''}
+            value={(data[field.id] as string) || ''}
+            onChange={(e) => setValue(field.id, e.target.value)}
+          />
+        )
+      case 'radio':
+      case 'checkbox':
+        return (
+          <div className="grid gap-2 sm:grid-cols-2">
+            {options[field.id]?.map((opt) => (
+              <EditableOption
+                key={opt}
+                value={opt}
+                isRadio={field.type === 'radio'}
+                checked={
+                  field.type === 'radio'
+                    ? data[field.id] === opt
+                    : (data[field.id] as string[])?.includes(opt)
+                }
+                onToggle={() => toggleOption(field, opt)}
+                onRename={(next) => renameOption(field, opt, next)}
+                onRemove={() => removeOption(field, opt)}
+              />
+            ))}
+            <button
+              type="button"
+              onClick={() => addOption(field)}
+              className="flex items-center justify-center gap-2 rounded-lg border border-dashed border-white/20 px-3 py-2 text-sm text-neutral-400 transition-colors hover:border-[#FF5A00] hover:text-[#FF5A00]"
+            >
+              <Icon name="Plus" size={16} /> Добавить вариант
+            </button>
+          </div>
+        )
+      case 'cases':
+        return (
+          <div className="space-y-4">
+            {(data[field.id] as CaseItem[]).map((c, i) => (
+              <div key={i} className="rounded-xl border border-white/15 bg-white/[0.03] p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <span className="text-sm font-semibold text-[#FF5A00]">
+                    Кейс {i + 1} {i === 0 && <span className="text-neutral-500">(обязательно)</span>}
+                  </span>
+                  {i > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => removeCase(field.id, i)}
+                      className="text-neutral-500 hover:text-red-400"
+                    >
+                      <Icon name="Trash2" size={16} />
+                    </button>
+                  )}
+                </div>
+                <div className="grid gap-2">
+                  {(
+                    [
+                      ['client', 'Клиент / ниша'],
+                      ['task', 'Задача'],
+                      ['done', 'Что сделали'],
+                      ['result', 'Результат в цифрах'],
+                      ['contact', 'Контакт клиента для подтверждения'],
+                    ] as [keyof CaseItem, string][]
+                  ).map(([key, label]) => (
+                    <input
+                      key={key}
+                      className={inputCls}
+                      placeholder={label}
+                      value={c[key]}
+                      onChange={(e) => updateCase(field.id, i, key, e.target.value)}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => addCase(field.id)}
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-white/20 px-3 py-3 text-sm text-neutral-400 transition-colors hover:border-[#FF5A00] hover:text-[#FF5A00]"
+            >
+              <Icon name="Plus" size={16} /> Добавить кейс
+            </button>
+          </div>
+        )
+    }
+  }
+
+  return (
+    <div className="relative min-h-screen bg-black text-white">
+      <div className="pointer-events-none fixed inset-0 z-0 opacity-60">
+        <Squares direction="diagonal" speed={0.4} squareSize={44} borderColor="#1f1f1f" hoverFillColor="#161616" />
+      </div>
+
+      {/* Sticky header */}
+      <header className="sticky top-0 z-30 border-b border-white/10 bg-black/70 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-5 py-4">
+          <div className="flex items-center gap-2 text-sm">
+            <span className="font-semibold text-white">Лидер <span className="text-[#FF5A00]">Франшиз</span></span>
+            <span className="text-neutral-600">·</span>
+            <span className="font-semibold text-white">Лидер <span className="text-[#FF5A00]">ИИ</span></span>
+          </div>
+          <Button
+            onClick={() => generatePdf(data)}
+            className="gap-2 bg-[#FF5A00] text-black hover:bg-[#ff7a33]"
+          >
+            <Icon name="Download" size={18} /> Скачать PDF
+          </Button>
+        </div>
+      </header>
+
+      <div className="relative z-10 mx-auto max-w-5xl px-5 py-12">
+        {/* Hero */}
+        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+          <span className="text-xs font-semibold uppercase tracking-[0.3em] text-[#FF5A00]">{brand.eyebrow}</span>
+          <h1 className="mt-3 text-3xl font-bold leading-tight tracking-tight md:text-5xl">{brand.heroTitle}</h1>
+          <p className="mt-4 max-w-2xl text-neutral-400">{brand.heroSubtitle}</p>
+        </motion.div>
+
+        {/* Section nav */}
+        <div className="mt-10 flex flex-wrap gap-2">
+          {formSections.map((s, i) => (
+            <button
+              key={s.id}
+              onClick={() => scrollTo(i)}
+              className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                i === activeSection
+                  ? 'border-[#FF5A00] bg-[#FF5A00]/15 text-[#FF5A00]'
+                  : 'border-white/15 text-neutral-400 hover:border-white/40 hover:text-white'
+              }`}
+            >
+              {s.number}. {s.title}
+            </button>
+          ))}
+        </div>
+
+        {/* Sections */}
+        <div className="mt-12 space-y-16">
+          {formSections.map((section, idx) => (
+            <motion.section
+              id={`form-section-${idx}`}
+              key={section.id}
+              className="scroll-mt-24"
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-80px' }}
+              transition={{ duration: 0.5 }}
+              onViewportEnter={() => setActiveSection(idx)}
+            >
+              <div className="mb-6 border-t border-[#FF5A00]/40 pt-5">
+                <h2 className="text-xl font-bold text-[#FF5A00] md:text-2xl">
+                  {section.number}. {section.title}
+                </h2>
+                {section.intro && <p className="mt-2 text-sm italic text-neutral-500">{section.intro}</p>}
+              </div>
+
+              <div className="space-y-7">
+                {section.fields.map((field) => (
+                  <div key={field.id}>
+                    <label className="mb-2 block text-sm font-semibold text-white">
+                      {field.label}
+                      {field.required && <span className="ml-1 text-[#FF5A00]">*</span>}
+                    </label>
+                    {field.hint && <p className="mb-3 text-xs italic text-neutral-500">{field.hint}</p>}
+                    {renderField(field)}
+                  </div>
+                ))}
+              </div>
+            </motion.section>
+          ))}
+        </div>
+
+        {/* Footer / submit */}
+        <div className="mt-16 rounded-2xl border border-white/10 bg-white/[0.03] p-8 text-center">
+          <h3 className="text-lg font-semibold text-white">Готовы отправить анкету?</h3>
+          <p className="mx-auto mt-2 max-w-xl text-sm text-neutral-400">
+            Скачайте заполненную анкету в PDF и отправьте её в Telegram {brand.footerTelegram} или на почту{' '}
+            {brand.footerEmail}.
+          </p>
+          <Button
+            onClick={() => generatePdf(data)}
+            size="lg"
+            className="mt-6 gap-2 bg-[#FF5A00] text-black hover:bg-[#ff7a33]"
+          >
+            <Icon name="Download" size={20} /> Скачать PDF
+          </Button>
+          <p className="mt-6 text-xs text-neutral-600">{brand.footerNote}</p>
+        </div>
+      </div>
+    </div>
+  )
+}

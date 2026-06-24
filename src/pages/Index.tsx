@@ -1,7 +1,7 @@
-import { LandingPage } from '@/components/landing'
+import Questionnaire from '@/components/landing/Questionnaire'
 
 const Index = () => {
-  return <LandingPage />
+  return <Questionnaire />
 }
 
 export default Index

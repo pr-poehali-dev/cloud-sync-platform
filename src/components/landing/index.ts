@@ -1,5 +1,3 @@
-export { default as LandingPage } from './LandingPage'
-export { default as Section } from './Section'
-export { default as Layout } from './Layout'
+export { default as Questionnaire } from './Questionnaire'
 export { Squares } from './squares-background'
-export { sections } from './sections'
+export { formSections, brand } from './formConfig'
