@@ -16,6 +16,7 @@ export default function Questionnaire() {
     formSections.forEach((s) =>
       s.fields.forEach((f) => {
         if (f.type === 'checkbox') d[f.id] = []
+        else if (f.type === 'multi-text') d[f.id] = ['']
         else if (f.type === 'cases') d[f.id] = [emptyCase()]
         else d[f.id] = ''
       })
@@ -81,6 +82,15 @@ export default function Questionnaire() {
     setActiveSection(idx)
   }
 
+  const updateMultiText = (fieldId: string, idx: number, val: string) => {
+    const arr = [...(data[fieldId] as string[])]
+    arr[idx] = val
+    setValue(fieldId, arr)
+  }
+  const addMultiText = (fieldId: string) => setValue(fieldId, [...(data[fieldId] as string[]), ''])
+  const removeMultiText = (fieldId: string, idx: number) =>
+    setValue(fieldId, (data[fieldId] as string[]).filter((_, i) => i !== idx))
+
   const renderField = (field: FormField) => {
     switch (field.type) {
       case 'text':
@@ -91,6 +101,37 @@ export default function Questionnaire() {
             value={(data[field.id] as string) || ''}
             onChange={(e) => setValue(field.id, e.target.value)}
           />
+        )
+      case 'multi-text':
+        return (
+          <div className="space-y-2">
+            {(data[field.id] as string[]).map((val, idx) => (
+              <div key={idx} className="flex gap-2">
+                <input
+                  className={inputCls}
+                  placeholder={field.placeholder || ''}
+                  value={val}
+                  onChange={(e) => updateMultiText(field.id, idx, e.target.value)}
+                />
+                {(data[field.id] as string[]).length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeMultiText(field.id, idx)}
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/15 text-neutral-500 transition-colors hover:border-red-400/50 hover:text-red-400"
+                  >
+                    <Icon name="X" size={16} />
+                  </button>
+                )}
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => addMultiText(field.id)}
+              className="flex items-center gap-2 rounded-lg border border-dashed border-white/20 px-4 py-2 text-sm text-neutral-400 transition-colors hover:border-[#FF5A00] hover:text-[#FF5A00]"
+            >
+              <Icon name="Plus" size={16} /> Добавить ещё
+            </button>
+          </div>
         )
       case 'textarea':
         return (

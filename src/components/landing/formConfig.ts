@@ -1,4 +1,4 @@
-export type FieldType = 'text' | 'textarea' | 'checkbox' | 'radio' | 'cases'
+export type FieldType = 'text' | 'multi-text' | 'textarea' | 'checkbox' | 'radio' | 'cases'
 
 export interface FormField {
   id: string
@@ -48,7 +48,7 @@ export const formSections: FormSection[] = [
       },
       { id: 'name', label: 'Имя и фамилия (для фрилансера) / Название компании', type: 'text', required: true },
       { id: 'city', label: 'Город', type: 'text', required: true },
-      { id: 'site', label: 'Сайт или портфолио (если есть)', type: 'text', placeholder: 'Необязательно' },
+      { id: 'site', label: 'Сайт или портфолио (если есть)', type: 'multi-text', placeholder: 'https://' },
       { id: 'telegram', label: 'Telegram (основной контакт)', type: 'text', required: true, placeholder: '@username' },
       { id: 'email', label: 'Email', type: 'text', required: true, placeholder: 'mail@example.com' },
     ],

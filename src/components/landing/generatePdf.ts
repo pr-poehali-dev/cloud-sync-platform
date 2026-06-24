@@ -76,7 +76,8 @@ export function generatePdf(data: FormData) {
       }
 
       let display = ''
-      if (isCheckedArray(value)) display = value.join(', ')
+      if (isCheckedArray(value)) display = value.filter(Boolean).join(', ')
+      else if (Array.isArray(value)) display = (value as string[]).filter(Boolean).join('\n')
       else if (typeof value === 'string') display = value
 
       if (!display) return
