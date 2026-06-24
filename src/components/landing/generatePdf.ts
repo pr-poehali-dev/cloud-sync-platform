@@ -257,7 +257,7 @@ export function generatePdf(data: FormData) {
     }
   </style>
 </head>
-<body>
+<body style="background:#0a0a0c;color:#e8e8e8">
   <div class="header">
     <div class="header-brand">
       <span class="brand-fr">Лидер Франшиз</span>
