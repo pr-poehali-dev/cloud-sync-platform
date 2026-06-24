@@ -162,14 +162,14 @@ export const formSections: FormSection[] = [
     intro: 'Необязательно, но значительно увеличивает доверие к карточке.',
     fields: [
       { id: 'photo', label: 'Ссылка на фото (квадратное, от 400×400)', type: 'text', placeholder: 'Необязательно — Google Drive, Яндекс.Диск или прямая ссылка' },
+      { id: 'portfolio', label: 'Портфолио / кейсы онлайн', type: 'text', placeholder: 'Необязательно — ссылка на сайт, Notion, Tilda и др.' },
+      { id: 'reviews', label: 'Ссылка на отзывы', type: 'text', placeholder: 'Необязательно — Яндекс, 2ГИС, Авито, Google и др.' },
       {
         id: 'portfolioPhotos',
         label: 'Фото из портфолио',
         type: 'photos',
         hint: 'Скриншоты результатов, интерфейсов, кейсов — что угодно. Необязательно, но поднимает карточку в рейтинге.',
       },
-      { id: 'portfolio', label: 'Портфолио / кейсы онлайн', type: 'text', placeholder: 'Необязательно — ссылка на сайт, Notion, Tilda и др.' },
-      { id: 'reviews', label: 'Ссылка на отзывы', type: 'text', placeholder: 'Необязательно — Яндекс, 2ГИС, Авито, Google и др.' },
     ],
   },
   {
