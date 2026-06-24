@@ -107,6 +107,17 @@ export default function Questionnaire() {
       if (arr(ai.niches).length) next.niches = arr(ai.niches)
       if (arr(ai.pricingType).length) next.pricingType = arr(ai.pricingType)
       if (arr(ai.workFormat).length) next.workFormat = arr(ai.workFormat)
+      // Кейсы
+      if (Array.isArray(ai.cases) && (ai.cases as CaseItem[]).length > 0) {
+        const aiCases = (ai.cases as CaseItem[]).map((c) => ({
+          client: c.client || '',
+          task: c.task || '',
+          done: c.done || '',
+          result: c.result || '',
+          contact: c.contact || '',
+        }))
+        next.cases = aiCases
+      }
       return next
     })
     // Добавляем новые опции в чекбоксы если их нет
