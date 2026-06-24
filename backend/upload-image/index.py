@@ -6,13 +6,17 @@ import urllib.request
 import uuid
 
 import boto3
+import psycopg2
 
 CORS = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Token',
     'Access-Control-Max-Age': '86400',
 }
+
+SCHEMA = os.environ.get('MAIN_DB_SCHEMA', 'public')
+ADMIN_TOKEN = os.environ.get('ADMIN_TOKEN', 'leader-ai-admin-2024')
 
 
 def ok(data):
@@ -231,16 +235,57 @@ JSON для заполнения:
     return ok(result)
 
 
+# ── /submit ───────────────────────────────────────────────────────────────────
+
+def handle_submit(body: dict) -> dict:
+    """Сохраняет заполненную анкету в БД."""
+    data = body.get('data', {})
+    if not data:
+        return err('data is required')
+    conn = psycopg2.connect(os.environ['DATABASE_URL'])
+    cur = conn.cursor()
+    cur.execute(
+        f'INSERT INTO {SCHEMA}.submissions (name, city, telegram, email, type, data) VALUES (%s,%s,%s,%s,%s,%s) RETURNING id',
+        (data.get('name',''), data.get('city',''), data.get('telegram',''), data.get('email',''), data.get('type',''), json.dumps(data, ensure_ascii=False))
+    )
+    row = cur.fetchone()
+    conn.commit(); cur.close(); conn.close()
+    return ok({'id': row[0], 'ok': True})
+
+
+def handle_admin(event: dict) -> dict:
+    """Возвращает список всех анкет (только с токеном)."""
+    token = (event.get('headers') or {}).get('X-Admin-Token', '')
+    if token != ADMIN_TOKEN:
+        return err('Unauthorized', 401)
+    conn = psycopg2.connect(os.environ['DATABASE_URL'])
+    cur = conn.cursor()
+    cur.execute(f'SELECT id, created_at, name, city, telegram, email, type, data FROM {SCHEMA}.submissions ORDER BY created_at DESC')
+    rows = cur.fetchall()
+    cur.close(); conn.close()
+    return ok({'submissions': [
+        {'id': r[0], 'created_at': str(r[1]), 'name': r[2], 'city': r[3], 'telegram': r[4], 'email': r[5], 'type': r[6], 'data': r[7]}
+        for r in rows
+    ]})
+
+
 # ── Router ────────────────────────────────────────────────────────────────────
 
 def handler(event: dict, context) -> dict:
-    """Единая функция: action=upload — загрузка фото, action=ai-fill — автозаполнение анкеты."""
+    """Единая функция: upload, ai-fill, submit, admin."""
     if event.get('httpMethod') == 'OPTIONS':
         return {'statusCode': 200, 'headers': CORS, 'body': ''}
+
+    method = event.get('httpMethod', 'POST')
+
+    if method == 'GET':
+        return handle_admin(event)
 
     body = json.loads(event.get('body') or '{}')
     action = body.get('action', 'upload')
 
     if action == 'ai-fill':
         return handle_ai_fill(body)
+    if action == 'submit':
+        return handle_submit(body)
     return handle_upload(body)

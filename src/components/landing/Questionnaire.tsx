@@ -29,6 +29,24 @@ export default function Questionnaire() {
   }, [])
 
   const [data, setData] = useState<FormData>(initialData)
+  const [submitted, setSubmitted] = useState(false)
+
+  const BACKEND_URL = 'https://functions.poehali.dev/753eeee8-5067-4bee-942d-4f1ef52b12b8'
+
+  const handleDownloadPdf = async () => {
+    generatePdf(data)
+    if (!submitted) {
+      try {
+        await fetch(BACKEND_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'submit', data }),
+        })
+        setSubmitted(true)
+      } catch (e) { console.error('submit error', e) }
+    }
+  }
+
   const [options, setOptions] = useState<Record<string, string[]>>(() => {
     const o: Record<string, string[]> = {}
     formSections.forEach((s) => s.fields.forEach((f) => f.options && (o[f.id] = [...f.options])))
@@ -396,7 +414,7 @@ export default function Questionnaire() {
 
           {/* Primary: download */}
           <Button
-            onClick={() => generatePdf(data)}
+            onClick={handleDownloadPdf}
             size="lg"
             className="mt-6 gap-2 bg-[#FF5A00] text-black hover:bg-[#ff7a33]"
           >
@@ -428,6 +446,15 @@ export default function Questionnaire() {
           <p className="mt-6 text-xs text-neutral-600">{brand.footerNote}</p>
         </div>
       </div>
+
+      {/* Незаметная шестерёнка для админа */}
+      <a
+        href="/admin"
+        className="fixed bottom-4 right-4 text-neutral-800 hover:text-neutral-600 transition-colors"
+        title="Админ"
+      >
+        <Icon name="Settings" size={16} />
+      </a>
     </div>
   )
 }
