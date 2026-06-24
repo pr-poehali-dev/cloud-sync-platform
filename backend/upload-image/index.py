@@ -126,10 +126,25 @@ def extract_file_text(file: dict) -> str:
     if 'pdf' in mime:
         return f'--- {name} (PDF) ---\n{extract_pdf_text(b64)}'
 
-    # TXT и DOC как текст
+    raw_bytes = base64.b64decode(b64)
+
+    # RTF (.doc часто экспортируется как RTF)
+    raw_str = raw_bytes.decode('utf-8', errors='ignore')
+    if raw_str.lstrip().startswith('{\\rtf'):
+        try:
+            # Убираем RTF-теги, оставляем текст
+            text = re.sub(r'\{[^{}]*\}', ' ', raw_str)  # вложенные группы
+            text = re.sub(r'\\[a-z]+\d*\s?', ' ', text)  # команды \word
+            text = re.sub(r'[{}\\]', ' ', text)
+            text = re.sub(r'\s+', ' ', text).strip()
+            print(f'[extract_file] RTF {name} -> {len(text)} chars, preview: {text[:200]}')
+            return f'--- {name} ---\n{text[:6000]}'
+        except Exception as e:
+            print(f'[extract_file] RTF ERROR: {e}')
+
+    # TXT как текст
     try:
-        raw = base64.b64decode(b64).decode('utf-8', errors='ignore')
-        text = re.sub(r'\s+', ' ', raw).strip()[:6000]
+        text = re.sub(r'\s+', ' ', raw_str).strip()[:6000]
         return f'--- {name} ---\n{text}'
     except Exception as e:
         return f'[Ошибка чтения {name}: {e}]'
