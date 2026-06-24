@@ -71,7 +71,7 @@ def gpt_request(prompt: str, api_key: str) -> str:
         'model': 'mistral-small-latest',
         'messages': [{'role': 'user', 'content': prompt}],
         'temperature': 0.2,
-        'max_tokens': 1500,
+        'max_tokens': 3000,
     }).encode()
     req = urllib.request.Request(
         'https://api.mistral.ai/v1/chat/completions',
@@ -181,12 +181,19 @@ JSON для заполнения:
 Для cases — массив объектов, каждый найденный кейс/проект отдельно (максимум 5):
 {{"client": "", "task": "", "done": "", "result": "", "contact": ""}}"""
 
+    print('[ai-fill] pages_text length:', len(pages_text))
+    print('[ai-fill] pages_text preview:', pages_text[:500])
+
     raw = gpt_request(prompt, api_key)
+    print('[ai-fill] GPT raw response:', raw[:2000])
+
     match = re.search(r'\{.*\}', raw, re.DOTALL)
     if not match:
         return err('GPT не вернул JSON', 500)
 
-    return ok(json.loads(match.group()))
+    result = json.loads(match.group())
+    print('[ai-fill] parsed result:', json.dumps(result, ensure_ascii=False)[:1000])
+    return ok(result)
 
 
 # ── Router ────────────────────────────────────────────────────────────────────
