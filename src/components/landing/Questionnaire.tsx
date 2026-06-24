@@ -107,6 +107,9 @@ export default function Questionnaire() {
       if (arr(ai.niches).length) next.niches = arr(ai.niches)
       if (arr(ai.pricingType).length) next.pricingType = arr(ai.pricingType)
       if (arr(ai.workFormat).length) next.workFormat = arr(ai.workFormat)
+      if (ai.terms) next.terms = str(ai.terms)
+      if (ai.portfolio) next.portfolio = str(ai.portfolio)
+      if (ai.reviews) next.reviews = str(ai.reviews)
       // Кейсы
       if (Array.isArray(ai.cases) && (ai.cases as CaseItem[]).length > 0) {
         const aiCases = (ai.cases as CaseItem[]).map((c) => ({
