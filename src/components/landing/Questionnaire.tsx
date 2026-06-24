@@ -447,13 +447,13 @@ export default function Questionnaire() {
         </div>
       </div>
 
-      {/* Незаметная шестерёнка для админа */}
+      {/* Шестерёнка для админа */}
       <a
         href="/admin"
-        className="fixed bottom-4 right-4 text-neutral-800 hover:text-neutral-600 transition-colors"
-        title="Админ"
+        className="fixed bottom-5 right-5 text-neutral-600 hover:text-[#FF5A00] transition-colors opacity-40 hover:opacity-100"
+        title="Панель администратора"
       >
-        <Icon name="Settings" size={16} />
+        <Icon name="Settings" size={18} />
       </a>
     </div>
   )
