@@ -275,12 +275,12 @@ export default function Questionnaire() {
         </motion.div>
 
         {/* Section nav */}
-        <div className="mt-10 flex flex-wrap gap-2">
+        <div className="mt-10 flex flex-wrap gap-1.5">
           {formSections.map((s, i) => (
             <button
               key={s.id}
               onClick={() => scrollTo(i)}
-              className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+              className={`shrink-0 whitespace-nowrap rounded-full border px-2 py-1 text-[10px] font-medium transition-colors ${
                 i === activeSection
                   ? 'border-[#FF5A00] bg-[#FF5A00]/15 text-[#FF5A00]'
                   : 'border-white/15 text-neutral-400 hover:border-white/40 hover:text-white'
